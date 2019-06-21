@@ -231,6 +231,9 @@ suite('Breakpoints', () => {
             }, {
                 path: TS_SOURCE,
                 line: TS_LINE
+            }, {
+                path: TS_SOURCE, // TODO: Verify that the BP expected location being on the .ts is the right thing to do
+                line: TS_LINE
             });
         });
 

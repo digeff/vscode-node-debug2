@@ -2,7 +2,10 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { ChromeDebugSession, logger, telemetry, OnlyProvideCustomLauncherExtensibilityPoints, interfaces, GetComponentByID, DependencyInjection, TYPES, UninitializedCDA } from 'vscode-chrome-debug-core';
+import {
+    ChromeDebugSession, logger, telemetry, OnlyProvideCustomLauncherExtensibilityPoints, interfaces, ISourceToClientConverter,
+    GetComponentByID, DependencyInjection, TYPES, UninitializedCDA
+} from 'vscode-chrome-debug-core';
 import * as path from 'path';
 import * as os from 'os';
 
@@ -16,6 +19,8 @@ import { FakeLogEventsProvider } from './components/fakeLogEventsProvider';
 import { FakeDOMInstrumentationBreakpointsSetter } from './components/fakeDOMInstrumentationBreakpointsSetter';
 import { PauseOnStartHandler } from './components/pauseOnStartHandler';
 import { NodeInitializer } from './launcherAndRuner/nodeInitializer';
+import { updateArguments } from './components/updateArguments';
+import { CustomSourceToClientConverter } from './components/sourceToClientConverter';
 
 function customizeComponents<T>(identifier: interfaces.ServiceIdentifier<T>, component: T, getComponentById: GetComponentByID): T {
     switch (identifier) {
@@ -24,6 +29,8 @@ function customizeComponents<T>(identifier: interfaces.ServiceIdentifier<T>, com
             return <T><unknown>new CustomizedUninitializedCDA(
                 getComponentById(TYPES.ISession),
                 <UninitializedCDA><unknown>component);
+        case TYPES.SourceToClientConverter:
+            return <T><unknown>new CustomSourceToClientConverter(<ISourceToClientConverter><unknown>component);
         default:
             return component;
     }
@@ -43,6 +50,7 @@ extensibilityPoints.bindAdditionalComponents = (diContainer: DependencyInjection
     diContainer.unconfigure(TYPES.IDOMInstrumentationBreakpointsSetter);
     diContainer.configureClass(TYPES.IDOMInstrumentationBreakpointsSetter, FakeDOMInstrumentationBreakpointsSetter);
 };
+extensibilityPoints.updateArguments = updateArguments;
 
 ChromeDebugSession.run(ChromeDebugSession.getSession(
     {

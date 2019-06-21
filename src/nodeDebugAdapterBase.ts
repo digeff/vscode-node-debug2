@@ -1,7 +1,7 @@
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { ILaunchRequestArguments, IAttachRequestArguments } from './nodeDebugInterfaces';
 import {
-    BasePathTransformer, ISession, inject, TYPES, ICommonRequestArgs, CDTP, BaseSourceMapTransformer, CDTPScriptsRegistry, EagerSourceMapTransformer,
+    BasePathTransformer, ISession, inject, TYPES, ICommonRequestArgs, CDTP, BaseSourceMapTransformer,
     InternalSourceBreakpoint, ISetBreakpointResult, ISetBreakpointsArgs, ChromeUtils, ILaunchResult, PausedEvent, logger, utils, StepProgressEventsEmitter
 } from 'vscode-chrome-debug-core';
 import { IOnPausedResult } from './v1-backwards-compatiblity/interfaces';
@@ -32,15 +32,19 @@ export class NodeDebugAdapterBase {
     private _waitForInitializedDefer = utils.promiseDefer<void>();
 
     public constructor(
-        @inject(TYPES.ISession) protected readonly _session: ISession, ) { }
+        @inject(TYPES.ISession) protected readonly _session: ISession,
+        /*@inject(TYPES.ICDTPEventHandlerTracker) protected readonly _eventHandlerTracker: ICDTPEventHandlerTracker*/) { }
 
     public initialize(args: DebugProtocol.InitializeRequestArguments): DebugProtocol.Capabilities {
         return {};
     }
 
-    public configure(pathTransformer: BasePathTransformer, sourceMapTransformer: BaseSourceMapTransformer, protocolAPI: CDTP.ProtocolApi) {
+    public configureTransformers(pathTransformer: BasePathTransformer, sourceMapTransformer: BaseSourceMapTransformer) {
         this._pathTransformer = pathTransformer;
         this._sourceMapTransformer = sourceMapTransformer;
+    }
+
+    public configureProtocolApi(protocolAPI: CDTP.ProtocolApi) {
         this._protocolApi = protocolAPI;
 
         this.hookConnectionEvents();
@@ -48,10 +52,6 @@ export class NodeDebugAdapterBase {
 
     public async launch(args: ILaunchRequestArguments): Promise<void> {
         this._launchAttachArgs = args;
-
-        // this._sourceMapTransformer is sometimes needed before configure is called when resolveProgramPath() is called from launch()
-        // this "pseudo-fake" version should work for most purposes
-        this._sourceMapTransformer = new EagerSourceMapTransformer({ args, clientCapabilities: { clientID: 'vscode' } }, new CDTPScriptsRegistry());
     }
 
     protected async doAttach(port: number, targetUrl?: string, address?: string, timeout?: number, websocketUrl?: string, extraCRDPChannelPort?: number): Promise<void> {
@@ -64,10 +64,6 @@ export class NodeDebugAdapterBase {
 
     public waitForInitialized(): Promise<void> {
         return this._waitForInitializedDefer.promise;
-    }
-
-    protected commonArgs(args: ICommonRequestArgs): void {
-        throw new Error(`not implemented commonArgs`);
     }
 
     protected hookConnectionEvents(): void {
@@ -113,8 +109,8 @@ export class NodeDebugAdapterBase {
         throw new Error(`not implemented globalEvaluate`);
     }
 
-    protected realPathToDisplayPath(realPath: string): string {
-        throw new Error(`not implemented realPathToDisplayPath`);
+    public realPathToDisplayPath(realPath: string): string {
+        return realPath;
     }
 
     public async terminateSession(reason: string, args?: DebugProtocol.DisconnectArguments, opts?: { port: number }): Promise<void> {
