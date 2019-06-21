@@ -4,7 +4,7 @@
 
 import {
     BaseCDAState, injectable, IInitializeRequestArgs, UninitializedCDA, ITelemetryPropertyCollector,
-    IDebugAdapterState, ISession, inject, TYPES, logger
+    IDebugAdapterState, ISession, inject, TYPES
 } from 'vscode-chrome-debug-core';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { getDAOrCreate } from '../v1-backwards-compatiblity/getDA';

@@ -87,6 +87,8 @@ export class NodeDebugAdapter extends NodeDebugAdapterBase {
     }
 
     public async launch(args: ILaunchRequestArguments): Promise<void> {
+        this.commonArgs(args);
+
         if (typeof args.enableSourceMapCaching !== 'boolean') {
             args.enableSourceMapCaching = this.isExtensionHost();
         }
@@ -298,6 +300,8 @@ export class NodeDebugAdapter extends NodeDebugAdapterBase {
     }
 
     public async attach(args: IAttachRequestArguments): Promise<void> {
+        this.commonArgs(args);
+
         try {
             if (typeof args.enableSourceMapCaching !== 'boolean') {
                 args.enableSourceMapCaching = true;
@@ -315,13 +319,13 @@ export class NodeDebugAdapter extends NodeDebugAdapterBase {
     }
 
     protected commonArgs(args: ICommonRequestArgs): void {
+        this._restartMode = args.restart;
+        args.smartStep = typeof args.smartStep === 'undefined' ? !this._isVSClient : args.smartStep;
+    }
+
+    public static updateCommonArgs(args: ICommonRequestArgs): void {
         args.sourceMapPathOverrides = getSourceMapPathOverrides(args.cwd, args.sourceMapPathOverrides);
         fixNodeInternalsSkipFiles(args);
-
-        args.smartStep = typeof args.smartStep === 'undefined' ? !this._isVSClient : args.smartStep;
-
-        this._restartMode = args.restart;
-        super.commonArgs(args);
     }
 
     protected hookConnectionEvents(): void {
@@ -631,7 +635,7 @@ export class NodeDebugAdapter extends NodeDebugAdapterBase {
             // Typically this happens if a tool like 'babel' or 'uglify' is used (because they both transpile js to js).
             // We use the source maps to find a 'source' file for the given js file.
             const generatedPath = await this._sourceMapTransformer.getGeneratedPathFromAuthoredPath(programPathAsRI);
-            if (generatedPath.textRepresentation && !generatedPath.isEquivalentTo(programPathAsRI)) {
+            if (generatedPath && generatedPath.textRepresentation && !generatedPath.isEquivalentTo(programPathAsRI)) {
                 // programPath must be source because there seems to be a generated file for it
                 logger.log(`Launch: program '${programPath}' seems to be the source; launch the generated file '${generatedPath}' instead`);
                 programPath = generatedPath.textRepresentation;
@@ -885,7 +889,7 @@ export class NodeDebugAdapter extends NodeDebugAdapterBase {
     /**
      * If realPath is an absolute path or a URL, return realPath. Otherwise, prepend the node_internals marker
      */
-    protected realPathToDisplayPath(realPath: string): string {
+    public realPathToDisplayPath(realPath: string): string {
         if (!realPath.match(/VM\d+/) && !path.isAbsolute(realPath)) {
             return `${NodeDebugAdapter.NODE_INTERNALS}/${realPath}`;
         }

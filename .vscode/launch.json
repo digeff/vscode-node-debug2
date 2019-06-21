@@ -53,7 +53,7 @@
 				"./out/test",
 				"-u", "tdd",
                 "-R", "node_modules/vscode-chrome-debug-core-testsupport/out/loggingReporter.js",
-				"--grep", "returns local vars"],
+				"--grep", "should stop on entry"],
 			"cwd": "${workspaceFolder}",
 			"skipFiles": [
 				"<node_internals>/**/*.js"
